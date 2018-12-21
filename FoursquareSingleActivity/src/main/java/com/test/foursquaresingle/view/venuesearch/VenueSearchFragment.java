@@ -72,10 +72,6 @@ public class VenueSearchFragment extends DaggerFragment implements IQuery {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Set Toolbar title and hide back button
-        ((MainActivity) getActivity()).getSupportActionBar().setDisplayShowHomeEnabled(false);
-        ((MainActivity) getActivity()).getSupportActionBar().setTitle(R.string.toolbar_title);
-
         // getActivity() returns same ViewModel with Activity
         mVenueListViewModel = ViewModelProviders.of(getActivity(), viewModelFactory).get(VenueSearchViewModel.class);
 
@@ -111,10 +107,12 @@ public class VenueSearchFragment extends DaggerFragment implements IQuery {
 
                 case SUCCESS:
 
-                    System.out.println("Search Fragment SUCCESS");
+                    System.out.println("Search Fragment SUCCESS mVenueListViewModel.isEventConsumed: "
+                            + mVenueListViewModel.isEventConsumed);
 
                     if (!mVenueListViewModel.isEventConsumed) {
                         hideLoadingDialog();
+                        mVenueListViewModel.isEventConsumed = true;
                     }
 
                     break;

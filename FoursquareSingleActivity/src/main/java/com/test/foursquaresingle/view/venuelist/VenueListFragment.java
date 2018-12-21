@@ -16,7 +16,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.test.foursquaresingle.MainActivity;
 import com.test.foursquaresingle.R;
 import com.test.foursquaresingle.databinding.FragmentVenueListBinding;
 import com.test.foursquaresingle.model.Venue;
@@ -42,7 +41,8 @@ public class VenueListFragment extends DaggerFragment implements OnVenueClickLis
 
     private VenueDetailDialogFragment mDialogFragment;
 
-    public static VenueListFragment newInstance() {
+    public static VenueListFragment newInstance(String title) {
+
         return new VenueListFragment();
     }
 
@@ -70,9 +70,6 @@ public class VenueListFragment extends DaggerFragment implements OnVenueClickLis
 
         fragmentBinding.setViewModel(mVenueListViewModel);
 
-        // Set Toolbar title and hide back button
-        ((MainActivity) getActivity()).getSupportActionBar().setDisplayShowHomeEnabled(true);
-        ((MainActivity) getActivity()).getSupportActionBar().setTitle(mVenueListViewModel.queryLiveData.getValue().type);
 
         RecyclerView recyclerView = fragmentBinding.recyclerView;
         RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(getActivity());
@@ -92,20 +89,16 @@ public class VenueListFragment extends DaggerFragment implements OnVenueClickLis
         // List Resource is a wrapper class that contains web request status and response data of venues if successful
         mVenueListViewModel.getVenueListResource().observe(this, listResource -> {
 
+
             if (listResource == null) return;
 
             switch (listResource.status) {
 
                 case SUCCESS:
-                    System.out.println("List Fragment SUCCESS");
+                    System.out.println("List Fragment SUCCESS mVenueListViewModel.isEventConsumed: "
+                            + mVenueListViewModel.isEventConsumed);
 
-                    if (listResource.data != null && !mVenueListViewModel.isEventConsumed) {
-
-                        adapter.setVenueList(listResource.data);
-                        // Consume ViewModel data to not trigger SUCCESS events on device rotation
-                        mVenueListViewModel.isEventConsumed = true;
-
-                    }
+                    adapter.setVenueList(listResource.data);
 
                     break;
             }

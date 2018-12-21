@@ -4,11 +4,10 @@ import android.arch.lifecycle.ViewModelProvider;
 import android.arch.lifecycle.ViewModelProviders;
 import android.databinding.DataBindingUtil;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.app.Fragment;
 import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
-import android.widget.Toast;
 
 import com.test.foursquaresingle.databinding.ActivityVenueSearchBinding;
 import com.test.foursquaresingle.view.venuelist.VenueListFragment;
@@ -30,8 +29,10 @@ public class MainActivity extends DaggerAppCompatActivity {
 
     private VenueSearchViewModel mVenueListViewModel;
 
+
     @Inject
     ViewModelProvider.Factory viewModelFactory;
+
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -40,31 +41,72 @@ public class MainActivity extends DaggerAppCompatActivity {
         mDataBinding = DataBindingUtil.setContentView(this, R.layout.activity_venue_search);
 
         // Create ViewModel to share data between fragments and this activity
+        // Search fragment shares venue list with list fragment and venue type with activity to change toolbar title
         mVenueListViewModel = ViewModelProviders.of(this, viewModelFactory).get(VenueSearchViewModel.class);
 
         // Set view properties
         initViews();
 
-        // Listen changes onBackStack, add/replace/remove fragment events
-        getSupportFragmentManager().addOnBackStackChangedListener(() -> {
-
-            int fragmentCount = getSupportFragmentManager().getFragments().size();
-
-            Toast.makeText(MainActivity.this, "MainActivity onBackStackChange() FRAG Count: "
-                    + fragmentCount, Toast.LENGTH_SHORT).show();
-
-            System.out.println("MainActivity onBackStackChange() frag count: " + fragmentCount);
+        // Listen fragment change of layout to set toolbar title and home button
+        listenFragmentChanges();
 
 
-        });
-
+        // Observe venue search result to change current fragment
+        observeVenueSearchResult();
 
         // Add search fragment only the first app is created
-        // After device rotation savedInstanceState is not null
-        if (savedInstanceState == null)
+        // After device rotation savedInstanceState is not null change to list fragment
+        // fragment manager and viewModel survives through activity life cycle
+        if (savedInstanceState == null) {
             navigateToVenueSearch();
+        }
+
+    }
+
+    /**
+     * Listen changes onBackStack, add/replace/remove fragment events
+     */
+    private void listenFragmentChanges() {
+
+        getSupportFragmentManager().addOnBackStackChangedListener(() -> {
 
 
+            Fragment currentFragment = getSupportFragmentManager().findFragmentById(R.id.layout_venue_search);
+
+
+            if (currentFragment != null) {
+
+                System.out.println("Fragment changed currentFragment: " + currentFragment);
+
+
+                try {
+
+                    // Change Toolbar properties on fragment changes
+                    if (currentFragment instanceof VenueSearchFragment) {
+
+                        getSupportActionBar().setDisplayHomeAsUpEnabled(false);
+                        getSupportActionBar().setDisplayShowHomeEnabled(false);
+
+                        mDataBinding.toolbar.setTitle(R.string.toolbar_title);
+
+                    } else {
+
+                        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+                        getSupportActionBar().setDisplayShowHomeEnabled(true);
+
+                        if (mVenueListViewModel.queryLiveData.getValue() != null
+                                && mVenueListViewModel.queryLiveData.getValue().venueType != null) {
+                            String toolbarTitle = mVenueListViewModel.queryLiveData.getValue().venueType;
+                            mDataBinding.toolbar.setTitle(toolbarTitle);
+                        }
+
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+        });
     }
 
     private void initViews() {
@@ -72,9 +114,6 @@ public class MainActivity extends DaggerAppCompatActivity {
         // Set Toolbar
         Toolbar toolbar = mDataBinding.toolbar;
         setSupportActionBar(toolbar);
-        // Hide arrow
-        getSupportActionBar().setDisplayHomeAsUpEnabled(false);
-        toolbar.setTitle(R.string.toolbar_title);
 
     }
 
@@ -83,8 +122,8 @@ public class MainActivity extends DaggerAppCompatActivity {
 
         int fragmentCount = getSupportFragmentManager().getFragments().size();
 
-        Toast.makeText(this, "MainActivity navigateToVenueSearch() frag count: " + fragmentCount, Toast.LENGTH_SHORT).show();
 
+        System.out.println("MainActivity navigateToVenueSearch() frag count: " + fragmentCount);
 
         VenueSearchFragment fragment = VenueSearchFragment.newInstance();
 
@@ -93,15 +132,18 @@ public class MainActivity extends DaggerAppCompatActivity {
                 .replace(R.id.layout_venue_search, fragment)
                 .commit();
 
+        getSupportActionBar().setDisplayHomeAsUpEnabled(false);
+        getSupportActionBar().setDisplayShowHomeEnabled(false);
+
+        mDataBinding.toolbar.setTitle(R.string.toolbar_title);
     }
 
 
     private void navigateToVenueList() {
 
-
         int fragmentCount = getSupportFragmentManager().getFragments().size();
 
-        Toast.makeText(this, "MainActivity navigateToVenueList() frag count: " + fragmentCount, Toast.LENGTH_SHORT).show();
+        System.out.println("MainActivity navigateToVenueList() frag count: " + fragmentCount);
 
 
         VenueListFragment venueListFragment = new VenueListFragment();
@@ -111,6 +153,15 @@ public class MainActivity extends DaggerAppCompatActivity {
                 .replace(R.id.layout_venue_search, venueListFragment)
                 .addToBackStack(null)
                 .commit();
+
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setDisplayShowHomeEnabled(true);
+
+        if (mVenueListViewModel.queryLiveData.getValue() != null
+                && mVenueListViewModel.queryLiveData.getValue().venueType != null) {
+            String toolbarTitle = mVenueListViewModel.queryLiveData.getValue().venueType;
+            mDataBinding.toolbar.setTitle(toolbarTitle);
+        }
 
 
     }
@@ -128,7 +179,8 @@ public class MainActivity extends DaggerAppCompatActivity {
             switch (listResource.status) {
 
                 case SUCCESS:
-                    System.out.println("Activity SUCCESS");
+                    System.out.println("Activity SUCCESS mVenueListViewModel.isEventConsumed: "
+                            + mVenueListViewModel.isEventConsumed);
 
                     if (!mVenueListViewModel.isEventConsumed) {
                         navigateToVenueList();
@@ -139,27 +191,16 @@ public class MainActivity extends DaggerAppCompatActivity {
         });
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
-    }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             // This is toolbar's back arrow touch
             case android.R.id.home:
-                goBack();
+                onBackPressed();
         }
         return super.onOptionsItemSelected(item);
     }
 
 
-    public void goBack() {
-        onBackPressed();
-        int fragmentCount = getSupportFragmentManager().getBackStackEntryCount();
-
-        System.out.println("MainActivity onBackPressed() frag count: " + fragmentCount);
-    }
 }
