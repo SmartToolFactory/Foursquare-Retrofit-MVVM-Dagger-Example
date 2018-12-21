@@ -1,14 +1,11 @@
 package com.test.foursquaresingle.view.venuelist;
 
-import android.app.Dialog;
 import android.arch.lifecycle.ViewModelProvider;
 import android.arch.lifecycle.ViewModelProviders;
-import android.content.DialogInterface;
 import android.databinding.DataBindingUtil;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v4.app.DialogFragment;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -16,10 +13,12 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.test.foursquaresingle.MainActivity;
 import com.test.foursquaresingle.R;
 import com.test.foursquaresingle.databinding.FragmentVenueListBinding;
 import com.test.foursquaresingle.model.Venue;
 import com.test.foursquaresingle.view.callback.OnVenueClickListener;
+import com.test.foursquaresingle.view.venuedetail.VenueDetailDialogFragment;
 import com.test.foursquaresingle.viewmodel.VenueDetailViewModel;
 import com.test.foursquaresingle.viewmodel.VenueSearchViewModel;
 
@@ -64,9 +63,22 @@ public class VenueListFragment extends DaggerFragment implements OnVenueClickLis
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        System.out.println("! LIST FRAGMENT onViewCreated()");
+
         mVenueDetailViewModel = ViewModelProviders.of(this, viewModelFactory).get(VenueDetailViewModel.class);
 
         mVenueListViewModel = ViewModelProviders.of(getActivity(), viewModelFactory).get(VenueSearchViewModel.class);
+
+        // Needed after rotation changes
+        ((MainActivity) getActivity()).getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        ((MainActivity) getActivity()).getSupportActionBar().setDisplayShowHomeEnabled(true);
+
+        if (mVenueListViewModel.queryLiveData.getValue() != null
+                && mVenueListViewModel.queryLiveData.getValue().venueType != null) {
+            String toolbarTitle = mVenueListViewModel.queryLiveData.getValue().venueType;
+            getActivity().setTitle(toolbarTitle);
+        }
+
 
         fragmentBinding.setViewModel(mVenueListViewModel);
 
@@ -81,7 +93,7 @@ public class VenueListFragment extends DaggerFragment implements OnVenueClickLis
         recyclerView.addItemDecoration(itemDecoration);
 
         // Create adapter and bind data of ViewModel
-        VenueAdapter adapter = new VenueAdapter(mVenueListViewModel.getVenueListResource().getValue().data, this);
+        VenueListAdapter adapter = new VenueListAdapter(mVenueListViewModel.getVenueListResource().getValue().data, this);
 
         // Bind data to RecyclerView from adapter
         recyclerView.setAdapter(adapter);
@@ -124,16 +136,14 @@ public class VenueListFragment extends DaggerFragment implements OnVenueClickLis
     @Override
     public void onClick(Venue venue) {
 
-
         String id = venue.getId();
 
         mVenueDetailViewModel.queryVenueDetail(id);
 
-
     }
 
     private void showVenueDetails(Venue venue) {
-        if (mDialogFragment == null) mDialogFragment = new VenueDetailDialogFragment();
+        if (mDialogFragment == null) mDialogFragment = VenueDetailDialogFragment.newInstance(venue);
 
         mDialogFragment.setVenue(venue);
         mDialogFragment.show(getFragmentManager(), "venueDetail");
@@ -153,43 +163,6 @@ public class VenueListFragment extends DaggerFragment implements OnVenueClickLis
         }
 
         mDialogFragment = null;
-    }
-
-
-    /**
-     * Static class to display Dialog to display Venues via DialogFragment to prevent leaks and live through device rotations
-     */
-    public static class VenueDetailDialogFragment extends DialogFragment {
-
-        private Venue venue;
-
-        public VenueDetailDialogFragment() {
-
-        }
-
-        public void setVenue(Venue venue) {
-            this.venue = venue;
-        }
-
-        @NonNull
-        @Override
-        public Dialog onCreateDialog(Bundle savedInstanceState) {
-            // Use the Builder class for convenient dialog construction
-            android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(getActivity());
-
-            builder.setTitle(venue.getName())
-                    .setMessage("Address: " + venue.getAddress() + ", Country: " + venue.getCountry() + ", Tips")
-                    .setOnDismissListener(new DialogInterface.OnDismissListener() {
-                        @Override
-                        public void onDismiss(DialogInterface dialog) {
-
-                        }
-                    });
-
-
-            // Create the AlertDialog object and return it
-            return builder.create();
-        }
     }
 
 

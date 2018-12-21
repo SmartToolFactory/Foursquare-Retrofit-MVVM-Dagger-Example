@@ -5,7 +5,9 @@ import android.arch.lifecycle.ViewModelProvider;
 import android.arch.lifecycle.ViewModelProviders;
 import android.content.pm.PackageManager;
 import android.databinding.DataBindingUtil;
+import android.location.Location;
 import android.os.Bundle;
+import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
@@ -13,12 +15,14 @@ import android.support.v4.content.ContextCompat;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
 
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
-import com.test.foursquaresingle.MainActivity;
+import com.google.android.gms.location.SettingsClient;
 import com.test.foursquaresingle.R;
 import com.test.foursquaresingle.databinding.FragmentVenueSearchBinding;
 import com.test.foursquaresingle.utils.QueryValidator;
@@ -76,10 +80,8 @@ public class VenueSearchFragment extends DaggerFragment implements IQuery {
         mVenueListViewModel = ViewModelProviders.of(getActivity(), viewModelFactory).get(VenueSearchViewModel.class);
 
         fragmentBinding.setViewModel(mVenueListViewModel);
-        //  fragmentBinding.setLifecycleOwner(this);
         fragmentBinding.setIQuery(this);
         observeVenueSearch();
-
 
     }
 
@@ -97,11 +99,12 @@ public class VenueSearchFragment extends DaggerFragment implements IQuery {
             switch (listResource.status) {
 
                 case LOADING:
-                    showLoadingDialog();
+                    System.out.println("Search Fragment LOADING");
+                    showProgressBar(getString(R.string.searching));
                     break;
 
                 case ERROR:
-                    hideLoadingDialog();
+                    hideProgressBar();
                     showApiFailError();
                     break;
 
@@ -111,7 +114,7 @@ public class VenueSearchFragment extends DaggerFragment implements IQuery {
                             + mVenueListViewModel.isEventConsumed);
 
                     if (!mVenueListViewModel.isEventConsumed) {
-                        hideLoadingDialog();
+                        hideProgressBar();
                         mVenueListViewModel.isEventConsumed = true;
                     }
 
@@ -121,11 +124,11 @@ public class VenueSearchFragment extends DaggerFragment implements IQuery {
     }
 
 
-    private void showLoadingDialog() {
+    private void showProgressBar(String message) {
 
         if (mProgressbar == null) {
             mProgressbar = new MaterialDialog.Builder(getActivity())
-                    .progress(true, 0).content(R.string.searching).cancelable(false)
+                    .progress(true, 0).content(message).cancelable(false)
                     .build();
         }
 
@@ -133,7 +136,7 @@ public class VenueSearchFragment extends DaggerFragment implements IQuery {
 
     }
 
-    private void hideLoadingDialog() {
+    private void hideProgressBar() {
 
         if (mProgressbar != null) {
             mProgressbar.hide();
@@ -167,6 +170,7 @@ public class VenueSearchFragment extends DaggerFragment implements IQuery {
             // Display error message
             showWarnUserInput();
         } else {
+
             // Run a query via ViewModel
             if (!venueLocation.isEmpty()) {
                 // Venue location is not empty so use it
@@ -193,29 +197,55 @@ public class VenueSearchFragment extends DaggerFragment implements IQuery {
 
     }
 
-
     private void requestLocation() {
-
 
         FusedLocationProviderClient fusedLocationClient = LocationServices.getFusedLocationProviderClient(getActivity());
 
-        if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+
+        if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+
+            return;
         }
 
-        System.out.println("VenueSearchFragment requestLocation()");
-
-        fusedLocationClient.getLastLocation()
+      /*  fusedLocationClient.getLastLocation()
                 .addOnSuccessListener(getActivity(), location -> {
+
+                    System.out.println("VenueSearchFragment requestLocation() -> getLastLocation(): " + location);
+
                     // Got last known location. In some rare situations this can be null.
                     if (location != null) {
                         // Logic to handle location object
 
-                        Toast.makeText(getActivity(), "VenueSearchFragment requestLocation() onSuccess() location: "
-                                + location, Toast.LENGTH_SHORT).show();
                         mUserCurrentLocation = (location.getLatitude() + "," + location.getLongitude());
                     }
-                });
+                });*/
+
+        LocationCallback locationCallback = new LocationCallback() {
+            @Override
+            public void onLocationResult(LocationResult locationResult) {
+
+                System.out.println("VenueSearchActivity requestLocation() -> onLocationResult() location: " + locationResult);
+
+                if (locationResult == null) {
+                    return;
+                }
+                for (Location location : locationResult.getLocations()) {
+                    // Update UI with location data
+
+                }
+            }
+
+        };
+
+        LocationRequest locationRequest = new LocationRequest();
+        locationRequest.setInterval(1000);
+
+        fusedLocationClient.requestLocationUpdates(locationRequest,
+                locationCallback, Looper.getMainLooper());
+
+        SettingsClient settingsClient = LocationServices.getSettingsClient(getActivity());
+
 
     }
 
@@ -248,5 +278,11 @@ public class VenueSearchFragment extends DaggerFragment implements IQuery {
             requestPermissions(permissions, requestCode);
         }
     }
+
+    /*
+     * ********* Location Methods
+     */
+
+
 }
 

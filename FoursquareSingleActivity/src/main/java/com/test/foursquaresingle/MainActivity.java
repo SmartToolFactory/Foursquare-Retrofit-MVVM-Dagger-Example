@@ -65,6 +65,7 @@ public class MainActivity extends DaggerAppCompatActivity {
 
     /**
      * Listen changes onBackStack, add/replace/remove fragment events
+     * This is invoked when back button is pressed to return previous fragment
      */
     private void listenFragmentChanges() {
 
@@ -76,8 +77,7 @@ public class MainActivity extends DaggerAppCompatActivity {
 
             if (currentFragment != null) {
 
-                System.out.println("Fragment changed currentFragment: " + currentFragment);
-
+                System.out.println("MainActivity onBackStackChanged() currentFragment: " + currentFragment);
 
                 try {
 

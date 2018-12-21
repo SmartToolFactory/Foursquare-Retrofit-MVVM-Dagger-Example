@@ -1,7 +1,13 @@
 package com.test.foursquaresingle.model;
 
+import android.databinding.BindingAdapter;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.widget.ImageView;
+
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.RequestOptions;
+import com.test.foursquaresingle.R;
 
 public class Venue implements Parcelable {
     private String id;
@@ -39,7 +45,6 @@ public class Venue implements Parcelable {
     }
 
 
-
     public String getId() {
         return id;
     }
@@ -48,10 +53,29 @@ public class Venue implements Parcelable {
         return tips;
     }
 
+    /**
+     * Binding adapter used with this class android:src used with binding of this onbject
+     * loads image from url into specified view
+     *
+     * @param view image to be loaded into
+     * @param url  of the image to be fetched
+     */
+    @BindingAdapter("android:src")
+    public static void setImageUrl(ImageView view, String url) {
+
+        RequestOptions requestOptions = new RequestOptions();
+        requestOptions.placeholder(R.drawable.ic_image_placeholder_darker);
+        requestOptions.error(R.drawable.ic_image_placeholder_grey);
+
+        Glide.with(view.getContext())
+                .setDefaultRequestOptions(requestOptions)
+                .load(url)
+                .into(view);
+    }
+
     public Photo getBestPhoto() {
         return bestPhoto;
     }
-
 
 
     @Override

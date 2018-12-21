@@ -17,13 +17,13 @@ import java.util.List;
 /**
  * RecyclerView Adapter with data binding to display venues as a list in {@link com.test.foursquaresingle.view.venuelist.VenueListFragment}
  */
-public class VenueAdapter extends RecyclerView.Adapter<VenueAdapter.VenueViewHolder> {
+public class VenueListAdapter extends RecyclerView.Adapter<VenueListAdapter.VenueViewHolder> {
 
     private List<Venue> mVenueList;
 
     private OnVenueClickListener mListener;
 
-    public VenueAdapter(List<Venue> venueList, OnVenueClickListener onVenueClickListener) {
+    public VenueListAdapter(List<Venue> venueList, OnVenueClickListener onVenueClickListener) {
         mVenueList = venueList;
         mListener = onVenueClickListener;
     }

@@ -44,7 +44,8 @@ public class Photo implements Parcelable {
         }
     };
 
-    public String getImageBySize(String size){
-        return prefix+size+suffix;
+    public String getImageBySize(String size) {
+        String imageUrl = prefix + size + suffix;
+        return imageUrl;
     }
 }
