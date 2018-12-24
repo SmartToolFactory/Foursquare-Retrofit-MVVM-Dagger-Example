@@ -6,6 +6,8 @@ import android.databinding.DataBindingUtil;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
 
@@ -74,25 +76,26 @@ public class MainActivity extends DaggerAppCompatActivity {
 
             Fragment currentFragment = getSupportFragmentManager().findFragmentById(R.id.layout_venue_search);
 
+            System.out.println("MainActivity onBackStackChanged() currentFragment: " + currentFragment);
+
 
             if (currentFragment != null) {
 
-                System.out.println("MainActivity onBackStackChanged() currentFragment: " + currentFragment);
 
                 try {
 
                     // Change Toolbar properties on fragment changes
                     if (currentFragment instanceof VenueSearchFragment) {
 
-                        getSupportActionBar().setDisplayHomeAsUpEnabled(false);
-                        getSupportActionBar().setDisplayShowHomeEnabled(false);
+                        //  getSupportActionBar().setDisplayHomeAsUpEnabled(false);
+                        // getSupportActionBar().setDisplayShowHomeEnabled(false);
 
                         mDataBinding.toolbar.setTitle(R.string.toolbar_title);
 
                     } else {
 
-                        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-                        getSupportActionBar().setDisplayShowHomeEnabled(true);
+                        //getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+                        // getSupportActionBar().setDisplayShowHomeEnabled(true);
 
                         if (mVenueListViewModel.queryLiveData.getValue() != null
                                 && mVenueListViewModel.queryLiveData.getValue().venueType != null) {
@@ -115,6 +118,13 @@ public class MainActivity extends DaggerAppCompatActivity {
         Toolbar toolbar = mDataBinding.toolbar;
         setSupportActionBar(toolbar);
 
+        DrawerLayout mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
+
+        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, mDrawerLayout, toolbar, R.string.app_name, R.string.app_name);
+        mDrawerLayout.addDrawerListener(toggle);
+        toggle.setDrawerIndicatorEnabled(true);
+        toggle.syncState();
+
     }
 
 
@@ -132,10 +142,10 @@ public class MainActivity extends DaggerAppCompatActivity {
                 .replace(R.id.layout_venue_search, fragment)
                 .commit();
 
-        getSupportActionBar().setDisplayHomeAsUpEnabled(false);
-        getSupportActionBar().setDisplayShowHomeEnabled(false);
+        //     getSupportActionBar().setDisplayHomeAsUpEnabled(false);
+        //     getSupportActionBar().setDisplayShowHomeEnabled(false);
 
-        mDataBinding.toolbar.setTitle(R.string.toolbar_title);
+        setTitle(R.string.toolbar_title);
     }
 
 
@@ -154,13 +164,13 @@ public class MainActivity extends DaggerAppCompatActivity {
                 .addToBackStack(null)
                 .commit();
 
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setDisplayShowHomeEnabled(true);
+        //    getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        //   getSupportActionBar().setDisplayShowHomeEnabled(true);
 
         if (mVenueListViewModel.queryLiveData.getValue() != null
                 && mVenueListViewModel.queryLiveData.getValue().venueType != null) {
             String toolbarTitle = mVenueListViewModel.queryLiveData.getValue().venueType;
-            mDataBinding.toolbar.setTitle(toolbarTitle);
+            setTitle(toolbarTitle);
         }
 
 

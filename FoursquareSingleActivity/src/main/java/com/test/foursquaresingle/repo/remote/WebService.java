@@ -120,7 +120,7 @@ public class WebService {
             public void onResponse(Call<VenueDetailResponse> call, Response<VenueDetailResponse> response) {
 
                 if (response.body() == null) {
-                    venueData.setValue(Resource.error("Error", null));
+                    venueData.setValue(Resource.error("Response body is NULL", null));
                 } else {
                     venueData.setValue(Resource.success(response.body().getResponse().getVenue()));
                 }
@@ -128,6 +128,8 @@ public class WebService {
 
             @Override
             public void onFailure(Call<VenueDetailResponse> call, Throwable t) {
+
+                System.out.println("WebService onError() error: " + t.getMessage());
                 venueData.setValue(Resource.error(t.getMessage(), null));
             }
         });

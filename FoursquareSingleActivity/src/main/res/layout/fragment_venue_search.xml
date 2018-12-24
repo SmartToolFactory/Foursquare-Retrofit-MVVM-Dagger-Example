@@ -1,5 +1,7 @@
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.test.foursquaresingle.MainActivity">
 
     <data>
 
@@ -14,50 +16,69 @@
     </data>
 
 
-    <RelativeLayout
+    <android.support.constraint.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+        android:background="#ddd">
 
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerInParent="true"
-            android:orientation="vertical">
 
-            <android.support.v7.widget.AppCompatEditText
-                android:id="@+id/venue_type"
-                android:layout_width="@dimen/place_search_edit_text_width"
-                android:layout_height="@dimen/place_search_edit_text_height"
-                android:hint="@string/hint_place_search_category"
-                android:singleLine="true" />
+        <android.support.v7.widget.AppCompatEditText
+            android:id="@+id/venue_type"
+            android:layout_width="@dimen/place_search_edit_text_width"
+            android:layout_height="@dimen/place_search_edit_text_height"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/white_rounded_rectangle"
+            android:hint="@string/hint_place_search_category"
+            android:singleLine="true"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.227" />
 
-            <android.support.v7.widget.AppCompatEditText
-                android:id="@+id/venue_location"
-                android:layout_width="@dimen/place_search_edit_text_width"
-                android:layout_height="@dimen/place_search_edit_text_height"
-                android:layout_marginTop="@dimen/place_search_element_space"
-                android:hint="@string/hint_place_search_where"
-                android:imeOptions="actionDone"
-                android:inputType="text" />
+        <android.support.v7.widget.AppCompatEditText
+            android:id="@+id/venue_location"
+            android:layout_width="@dimen/place_search_edit_text_width"
+            android:layout_height="@dimen/place_search_edit_text_height"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/white_rounded_rectangle"
+            android:hint="@string/hint_place_search_where"
+            android:imeOptions="actionDone"
+            android:inputType="text"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/venue_type"
+            app:layout_constraintVertical_bias="0.051" />
 
-            <Button
-                android:id="@+id/button_search"
-                android:layout_width="@dimen/place_search_button_width"
-                android:layout_height="@dimen/place_search_button_height"
-                android:layout_marginTop="@dimen/place_search_element_space"
-                android:background="@color/colorButton"
-                android:drawableLeft="@drawable/icon_search"
-                android:gravity="center"
-                android:onClick="@{() -> iQuery.onQuery()}"
-                android:paddingLeft="@dimen/place_search_icon_padding"
-                android:singleLine="true"
-                android:text="@string/action_place_search"
-                android:textColor="@android:color/white" />
+        <Button
+            android:id="@+id/button_search"
+            android:layout_width="@dimen/place_search_button_width"
+            android:layout_height="@dimen/place_search_button_height"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/purple_rounded_rectangle"
+            android:drawableLeft="@drawable/icon_search"
+            android:gravity="center"
+            android:onClick="@{() -> iQuery.onQuery()}"
+            android:paddingLeft="@dimen/place_search_icon_padding"
+            android:singleLine="true"
+            android:text="@string/action_place_search"
+            android:textColor="@android:color/white"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/venue_location"
+            app:layout_constraintVertical_bias="0.086" />
 
-        </LinearLayout>
+    </android.support.constraint.ConstraintLayout>
 
-    </RelativeLayout>
 
 </layout>
 
