@@ -1,8 +1,12 @@
 package com.test.foursquaresingle.view.venuesearch;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.arch.lifecycle.ViewModelProvider;
 import android.arch.lifecycle.ViewModelProviders;
+import android.content.Intent;
+import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.databinding.DataBindingUtil;
 import android.location.Location;
@@ -17,15 +21,24 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.afollestad.materialdialogs.MaterialDialog;
+import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.common.api.ResolvableApiException;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.LocationSettingsRequest;
+import com.google.android.gms.location.LocationSettingsResponse;
+import com.google.android.gms.location.LocationSettingsStatusCodes;
 import com.google.android.gms.location.SettingsClient;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.test.foursquaresingle.MainActivity;
 import com.test.foursquaresingle.R;
 import com.test.foursquaresingle.databinding.FragmentVenueSearchBinding;
+import com.test.foursquaresingle.utils.NetworkUtils;
 import com.test.foursquaresingle.utils.QueryValidator;
+import com.test.foursquaresingle.utils.SnackbarUtils;
 import com.test.foursquaresingle.view.callback.IQuery;
 import com.test.foursquaresingle.viewmodel.VenueSearchViewModel;
 
@@ -38,9 +51,11 @@ public class VenueSearchFragment extends DaggerFragment implements IQuery {
     /**
      *
      */
-    private String mUserCurrentLocation;
+    private String mVenueLocation;
+    private String mVenueType;
 
     private static final int REQUEST_LOCATION = 100;
+    private static final int REQUEST_CHECK_SETTINGS = 101;
 
 
     @Inject
@@ -52,6 +67,10 @@ public class VenueSearchFragment extends DaggerFragment implements IQuery {
     private VenueSearchViewModel mVenueListViewModel;
 
     private MaterialDialog mProgressbar;
+
+    // Location
+    private FusedLocationProviderClient mFusedLocationProviderClient;
+    private LocationCallback mLocationCallback;
 
 
     public static VenueSearchFragment newInstance() {
@@ -81,6 +100,9 @@ public class VenueSearchFragment extends DaggerFragment implements IQuery {
 
         fragmentBinding.setViewModel(mVenueListViewModel);
         fragmentBinding.setIQuery(this);
+
+        ((MainActivity) getActivity()).enableToolbarBackArrow(false);
+
         observeVenueSearch();
 
     }
@@ -99,21 +121,20 @@ public class VenueSearchFragment extends DaggerFragment implements IQuery {
             switch (listResource.status) {
 
                 case LOADING:
-                    System.out.println("Search Fragment LOADING");
                     showProgressBar(getString(R.string.searching));
                     break;
 
                 case ERROR:
+                    // We got a result hide progress bar
                     hideProgressBar();
+                    // show error to user
                     showApiFailError();
                     break;
 
                 case SUCCESS:
 
-                    System.out.println("Search Fragment SUCCESS mVenueListViewModel.isEventConsumed: "
-                            + mVenueListViewModel.isEventConsumed);
-
                     if (!mVenueListViewModel.isEventConsumed) {
+                        // We got a result hide progress bar
                         hideProgressBar();
                         mVenueListViewModel.isEventConsumed = true;
                     }
@@ -162,34 +183,32 @@ public class VenueSearchFragment extends DaggerFragment implements IQuery {
      * Runs string validation and query if valida
      */
     private void query() {
-        String venueType = fragmentBinding.venueType.getEditableText().toString();
-        String venueLocation = fragmentBinding.venueLocation.getEditableText().toString();
+        mVenueType = fragmentBinding.venueType.getEditableText().toString();
+        mVenueLocation = fragmentBinding.venueLocation.getEditableText().toString();
 
         // Check if this is a valid queryVenues
-        if (!QueryValidator.isValidQuery(venueType)) {
+        if (!QueryValidator.isValidQuery(mVenueType)) {
             // Display error message
             showWarnUserInput();
         } else {
 
             // Run a query via ViewModel
-            if (!venueLocation.isEmpty()) {
+            if (!mVenueLocation.isEmpty()) {
                 // Venue location is not empty so use it
-                mVenueListViewModel.queryVenues(venueType, venueLocation);
+                mVenueListViewModel.queryVenues(mVenueType, mVenueLocation);
                 mVenueListViewModel.isEventConsumed = false;
 
             } else {
                 // Venue location is empty use current location
+
+                // User hasn't granted location permission yet
                 if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION)
                         != PackageManager.PERMISSION_GRANTED) {
-
                     requestPermission(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION);
                 } else {
-
-                    requestLocation();
-
-                    mVenueListViewModel.queryVenuesByLocation(venueType, mUserCurrentLocation);
-                    mVenueListViewModel.isEventConsumed = false;
-
+                    // Permission for location is granted, request location and query depending on result
+                    // User's location settings might not be on
+                    queryVenueOnCurrentLocation();
                 }
 
             }
@@ -197,70 +216,145 @@ public class VenueSearchFragment extends DaggerFragment implements IQuery {
 
     }
 
-    private void requestLocation() {
+    private void queryVenueOnCurrentLocation() {
+        mFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(getActivity());
+        getLocation();
+    }
 
-        FusedLocationProviderClient fusedLocationClient = LocationServices.getFusedLocationProviderClient(getActivity());
+    @SuppressLint("MissingPermission")
+    private void getLocation() {
+        createLocationCallback();
+        startLocationUpdates();
+    }
 
+    /**
+     * Location callback is used for getting location
+     *
+     * @return LocationCallback to set a location request
+     */
+    private void createLocationCallback() {
 
-        if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        mLocationCallback = new LocationCallback() {
 
-            return;
-        }
-
-      /*  fusedLocationClient.getLastLocation()
-                .addOnSuccessListener(getActivity(), location -> {
-
-                    System.out.println("VenueSearchFragment requestLocation() -> getLastLocation(): " + location);
-
-                    // Got last known location. In some rare situations this can be null.
-                    if (location != null) {
-                        // Logic to handle location object
-
-                        mUserCurrentLocation = (location.getLatitude() + "," + location.getLongitude());
-                    }
-                });*/
-
-        LocationCallback locationCallback = new LocationCallback() {
             @Override
             public void onLocationResult(LocationResult locationResult) {
 
-                System.out.println("VenueSearchActivity requestLocation() -> onLocationResult() location: " + locationResult);
 
-                if (locationResult == null) {
-                    return;
-                }
-                for (Location location : locationResult.getLocations()) {
-                    // Update UI with location data
+                if (locationResult != null) {
+
+                    Location location = locationResult.getLastLocation();
+                    mVenueLocation = location.getLatitude() + "," + location.getLongitude();
+                    mVenueListViewModel.queryVenuesByLocation(mVenueType, mVenueLocation);
+
+                    // Stop location updates so app does not query over and over again
+                    stopLocationUpdates();
 
                 }
             }
-
         };
 
-        LocationRequest locationRequest = new LocationRequest();
-        locationRequest.setInterval(1000);
+    }
 
-        fusedLocationClient.requestLocationUpdates(locationRequest,
-                locationCallback, Looper.getMainLooper());
+    private void stopLocationUpdates() {
+        // It is a good practice to remove location requests when the activity is in a paused or
+        // stopped state. Doing so helps battery performance and is especially
+        // recommended in applications that request frequent location updates.
+        mFusedLocationProviderClient.removeLocationUpdates(mLocationCallback)
+                .addOnCompleteListener(getActivity(), task -> {
+                });
+    }
+
+
+    private void startLocationUpdates() {
+
+        // Set location request to set location request interval
+        LocationRequest locationRequest = getLocationRequest();
+
+        // Location setting request needed to open location settings if location providers are not active
+        LocationSettingsRequest locationSettingsRequest = getLocationSettingsRequest(locationRequest);
+
 
         SettingsClient settingsClient = LocationServices.getSettingsClient(getActivity());
 
+        // Begin by checking if the device has the necessary location settings.
+        settingsClient.checkLocationSettings(locationSettingsRequest)
+                .addOnSuccessListener(getActivity(), new OnSuccessListener<LocationSettingsResponse>() {
+                    @SuppressLint("MissingPermission")
+                    @Override
+                    public void onSuccess(LocationSettingsResponse locationSettingsResponse) {
 
+                        mFusedLocationProviderClient.requestLocationUpdates(locationRequest,
+                                mLocationCallback, Looper.myLooper());
+
+                    }
+                })
+                .addOnFailureListener(getActivity(), e -> {
+
+                    int statusCode = ((ApiException) e).getStatusCode();
+
+                    switch (statusCode) {
+                        case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
+
+                            try {
+                                // Show the dialog by calling startResolutionForResult(), and check the
+                                // result in onActivityResult().
+                                ResolvableApiException rae = (ResolvableApiException) e;
+
+                                // Used with Activity, does not call fragments onActivityResult method
+                                //   rae.startResolutionForResult(getActivity(), REQUEST_CHECK_SETTINGS);
+
+                                // TODO calls fragments onActivityResult method which required to run query if user activated location settings
+                                startIntentSenderForResult(rae.getResolution().getIntentSender(),
+                                        REQUEST_CHECK_SETTINGS, null, 0, 0, 0, null);
+
+                            } catch (IntentSender.SendIntentException sie) {
+                                sie.printStackTrace();
+                            }
+                            break;
+
+                        case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
+                            String errorMessage = "Location settings are inadequate, and cannot be " +
+                                    "fixed here. Fix in Settings.";
+                    }
+
+                });
+    }
+
+    @NonNull
+    private LocationSettingsRequest getLocationSettingsRequest(LocationRequest locationRequest) {
+        LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder();
+        builder.addLocationRequest(locationRequest);
+        return builder.build();
+    }
+
+    @NonNull
+    private LocationRequest getLocationRequest() {
+        LocationRequest locationRequest = new LocationRequest();
+        locationRequest.setInterval(2000);
+        locationRequest.setFastestInterval(3000);
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        return locationRequest;
     }
 
     @Override
     public void onQuery() {
 
-        query();
+        // Check if user is online
+        if (NetworkUtils.isOnline(getActivity().getApplicationContext())) {
+            query();
+        } else {
+            SnackbarUtils.showSnackbar(getView(), "No internet connection!");
+        }
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
-        query();
+        // TODO query after location permission is granted
+        queryVenueOnCurrentLocation();
     }
+
 
     private void requestPermission(final String[] permissions, final int requestCode) {
         boolean shouldProvideRationale =
@@ -279,9 +373,21 @@ public class VenueSearchFragment extends DaggerFragment implements IQuery {
         }
     }
 
-    /*
-     * ********* Location Methods
-     */
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+
+        System.out.println("VenueSearchFragment onActivityResult() ");
+        switch (requestCode) {
+            // Check for the integer request code originally supplied to startResolutionForResult().
+            case REQUEST_CHECK_SETTINGS:
+                switch (resultCode) {
+                    case Activity.RESULT_OK:
+                        queryVenueOnCurrentLocation();
+                        break;
+                }
+                break;
+        }
+    }
 
 
 }

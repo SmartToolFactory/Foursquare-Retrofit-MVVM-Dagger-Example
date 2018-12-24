@@ -15,7 +15,6 @@ public class UserComment implements Parcelable {
 
     public String getText() {
 
-
         return text;
     }
 

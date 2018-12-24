@@ -6,7 +6,6 @@ import android.databinding.DataBindingUtil;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.design.widget.Snackbar;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -18,9 +17,7 @@ import com.test.foursquaresingle.MainActivity;
 import com.test.foursquaresingle.R;
 import com.test.foursquaresingle.databinding.FragmentVenueListBinding;
 import com.test.foursquaresingle.model.Venue;
-import com.test.foursquaresingle.utils.SnackbarUtils;
 import com.test.foursquaresingle.view.callback.OnVenueClickListener;
-import com.test.foursquaresingle.view.venuedetail.VenueDetailDialogFragment;
 import com.test.foursquaresingle.viewmodel.VenueDetailViewModel;
 import com.test.foursquaresingle.viewmodel.VenueSearchViewModel;
 
@@ -40,12 +37,6 @@ public class VenueListFragment extends DaggerFragment implements OnVenueClickLis
 
     private VenueDetailViewModel mVenueDetailViewModel;
 
-    private VenueDetailDialogFragment mDialogFragment;
-
-    public static VenueListFragment newInstance(String title) {
-
-        return new VenueListFragment();
-    }
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -65,22 +56,13 @@ public class VenueListFragment extends DaggerFragment implements OnVenueClickLis
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        System.out.println("! LIST FRAGMENT onViewCreated()");
 
-        mVenueDetailViewModel = ViewModelProviders.of(this, viewModelFactory).get(VenueDetailViewModel.class);
+        mVenueDetailViewModel = ViewModelProviders.of(getActivity(), viewModelFactory).get(VenueDetailViewModel.class);
 
         mVenueListViewModel = ViewModelProviders.of(getActivity(), viewModelFactory).get(VenueSearchViewModel.class);
 
-        // Needed after rotation changes
-        ((MainActivity) getActivity()).getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        ((MainActivity) getActivity()).getSupportActionBar().setDisplayShowHomeEnabled(true);
-
-        if (mVenueListViewModel.queryLiveData.getValue() != null
-                && mVenueListViewModel.queryLiveData.getValue().venueType != null) {
-            String toolbarTitle = mVenueListViewModel.queryLiveData.getValue().venueType;
-            getActivity().setTitle(toolbarTitle);
-        }
-
+        // Needed after rotation changes and setting back button navigation
+        ((MainActivity) getActivity()).enableToolbarBackArrow(true);
 
         fragmentBinding.setViewModel(mVenueListViewModel);
 
@@ -103,78 +85,19 @@ public class VenueListFragment extends DaggerFragment implements OnVenueClickLis
         // List Resource is a wrapper class that contains web request status and response data of venues if successful
         mVenueListViewModel.getVenueListResource().observe(this, listResource -> {
 
-
             if (listResource == null) return;
 
             switch (listResource.status) {
-
                 case SUCCESS:
-
                     adapter.setVenueList(listResource.data);
-
-                    break;
-            }
-
-        });
-
-
-        mVenueDetailViewModel.getVenueDetail().observe(this, venueResource -> {
-
-            if (venueResource == null) return;
-
-            switch (venueResource.status) {
-
-                case ERROR:
-                  showSnackbar(venueResource.message);
-                    break;
-
-                case SUCCESS:
-                    showVenueDetails(venueResource.data);
                     break;
             }
         });
     }
-
 
     @Override
     public void onClick(Venue venue) {
-
-        String id = venue.getId();
-
-        System.out.println("VenueListFragment onClick(): id" + id);
-
-        mVenueDetailViewModel.queryVenueDetail(id);
-
-    }
-
-    private void showVenueDetails(Venue venue) {
-
-        System.out.println("VenueListFragment showVenueDetails(): " + venue);
-
-        if (mDialogFragment == null) mDialogFragment = VenueDetailDialogFragment.newInstance(venue);
-
-        mDialogFragment.setVenue(venue);
-        mDialogFragment.show(getFragmentManager(), "venueDetail");
-
-        // TODO FIX: to not fire SUCCESS event of Live Data
-        mVenueDetailViewModel.isEventConsumed = true;
-    }
-
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-
-        // This is for preventing memory leaks
-        if ((mDialogFragment != null) && mDialogFragment.isAdded() && mDialogFragment.isResumed()) {
-            mDialogFragment.dismiss();
-        }
-
-        mDialogFragment = null;
-    }
-
-    private void showSnackbar(String message) {
-        SnackbarUtils.showSnackbar(getView(),message);
+        mVenueDetailViewModel.queryVenueDetail(venue.getId());
     }
 
 }
