@@ -7,4 +7,4 @@ You need to change     FOURSQUARE_CLIENT_ID, FOURSQUARE_SECRET_ID in FourSquare 
 Single Activity version has 2 fragments and pass data between fragments and MainActivity via ViewModels.
 Multiple activity version has 2 activites and 2 fragments. List of venues is passed to second activity via bundle. And dependency injection of this example is slightly different than single activity one.
 
-Note: There is a problem wit
+Note: There is a problem with UserCommentAdapter binding. It does not display user comments eventhough user comments inside ViewHolder are not null
