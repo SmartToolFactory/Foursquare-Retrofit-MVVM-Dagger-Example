@@ -7,8 +7,6 @@ import android.support.v7.app.AppCompatActivity;
 
 public class SplashActivity extends AppCompatActivity {
 
-    private boolean mVisible = true;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,13 +25,5 @@ public class SplashActivity extends AppCompatActivity {
             }
         }, 200);
     }
-
-    @Override
-    protected void onStop() {
-
-        mVisible = false;
-        super.onStop();
-    }
-
 
 }

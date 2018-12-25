@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/Foursquare-Retrofit-MVVM-Dagger-Example.iml" filepath="$PROJECT_DIR$/Foursquare-Retrofit-MVVM-Dagger-Example.iml" />
+      <module fileurl="file://$PROJECT_DIR$/FoursquareMultipleActivities/FoursquareMultipleActivities.iml" filepath="$PROJECT_DIR$/FoursquareMultipleActivities/FoursquareMultipleActivities.iml" />
+      <module fileurl="file://$PROJECT_DIR$/FoursquareSingleActivity/FoursquareSingleActivity.iml" filepath="$PROJECT_DIR$/FoursquareSingleActivity/FoursquareSingleActivity.iml" />
+    </modules>
+  </component>
+</project>

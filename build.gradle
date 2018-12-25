@@ -39,6 +39,7 @@ ext {
 
     // Google
     location = '16.0.0'
+    maps = '16.0.0'
 
     // MVVM
     archLifecycleVersion = "1.1.1"
@@ -53,7 +54,11 @@ ext {
     roomVersion = "1.1.1"
     archRoomVersion = "1.1.1"
 
+    // Dagger
     dagger_version = "2.17"
+
+    // Glide
+    glide = '4.6.1'
 
     guavaVersion = '18.0'
     junitVersion = '4.12'
